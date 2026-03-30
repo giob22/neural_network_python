@@ -1,5 +1,4 @@
 import numpy as np
-import math as m
 from nn_layer import *
 
 class neural_network:
