@@ -1,25 +1,22 @@
 import numpy as np
-from nn_layer import *
+from .nn_layer import *
 
 class neural_network:
-    def __init__(self, n_hidden_layer, size_hidden, size_input, size_output, learning_rate, hidden_function, output_function):
-        self.size = n_hidden_layer + 1 #1 per l'output layer sempre presente
+    def __init__(self, hidden_config, size_input, size_output, learning_rate, output_function):
+        self.size = len(hidden_config) + 1 #1 per l'output layer sempre presente
         self.output_size = size_output
         self.lr = learning_rate
 
         
         self.hiddens_layers = []
-        # il layer di input consiste nel primo hidden layer
 
         # creo i layer intermedi (hidden) + input layer
-        if n_hidden_layer > 0:
-            self.input_layer = layer(size_hidden, size_input, hidden_function)
-            self.hiddens_layers.append(self.input_layer)
-            if n_hidden_layer - 1 > 0:
-                for _ in range(n_hidden_layer - 1):
-                    self.hiddens_layers.append(layer(size_hidden, size_hidden, hidden_function))
+        prev = size_input
+        for rows, f in hidden_config:
+            self.hiddens_layers.append(layer(rows, prev, f))
+            prev = rows
             
-        self.output_layer = layer(size_output, size_hidden if n_hidden_layer > 0 else size_input, output_function)
+        self.output_layer = layer(size_output, prev, output_function)
         
         # necessari per la backpropagation
         self.valori_intermedi = []
@@ -30,31 +27,19 @@ class neural_network:
         self.valori_intermedi = []
         
         x = np.array(x).reshape(-1,1)
-        # input layer
-        # t = self.input_layer.W @ x + self.input_layer.b
-        # self.valori_intermedi.append(t)
-        # t = self.input_layer.activation_function(t)
 
-
-        # print(f"{self.input_layer.W} \n x \n{x} \n + \n {self.input_layer.b} \n = \n {self.input_layer.W @ x + self.input_layer.b}\n\nsigma(z_i) = \n {t}")
-        
-        
-        # hidden layer
 
         t = x
 
-        for layer in self.hiddens_layers:
+        for elem in self.hiddens_layers:
             self.valori_input.append(t)
-            t = layer.W @ t + layer.b
+            t = elem.W @ t + elem.b
             self.valori_intermedi.append(t)
-            # print(t)
-            t = layer.activation_function(t)
+            
+            t = elem.activation_function(t)
 
         self.valori_input.append(t)
-        # print(F"valori intermedi: \n {self.valori_intermedi}")
-        # print(F"valori input: \n {self.valori_input}")
 
-        # output layer
 
         
         t = self.output_layer.W @ t + self.output_layer.b

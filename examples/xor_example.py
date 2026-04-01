@@ -1,9 +1,9 @@
 import random
 import numpy as np
-from nn_engine import neural_network
-from nn_layer import *
+from neural_network.nn_engine import neural_network
+from neural_network.nn_layer import *
 
-p = neural_network(1,100,2,1,0.2,relu,sigmoid)
+p = neural_network([(8,sigmoid), (100, relu)],2,1,0.2,sigmoid)
 
 for _ in range(50000):
     n1 = np.random.randint(0,2)

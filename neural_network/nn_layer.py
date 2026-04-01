@@ -29,15 +29,23 @@ def d_sigmoid(x):
     s = sigmoid(x)
     return s * (1 - s)
 
+def softmax(x):
+    e_x = np.exp(x-np.max(x)) # sottraggo il max per stabilità numerica
+    return e_x / e_x.sum()
+
+def d_softmax(x):
+    s = softmax(x)
+    return s * (1-s) # approssimazione diagonale
 
 
-functions = {relu: drelu, linear: d_linear, sigmoid: d_sigmoid, leaky_relu: d_leaky_relu}
+
+function_hidden = {relu: drelu, linear: d_linear, sigmoid: d_sigmoid, leaky_relu: d_leaky_relu, softmax: d_softmax}
 
 class layer:
     def __init__(self, row, col, activation_function):
         self.weights = np.random.uniform(-0.5,0.5, size=(row, col))
         self.func = activation_function
-        self.dfunc = functions[self.func]
+        self.dfunc = function_hidden[self.func]
         self.bias = np.random.uniform(-0.5,0.5, size=(row,1))
 
     @property

@@ -1,56 +1,83 @@
 # Neural Network Python
 
-Questo progetto è un'implementazione didattica di una rete neurale (Multi-Layer Perceptron) scritta completamente da zero. L'obiettivo è mostrare in modo pratico come funziona il processo di apprendimento "sotto il cofano", usando solo logica matriciale nuda e cruda con `numpy`, senza appoggiarsi a framework pronti.
+Implementazione didattica di una rete neurale (Multi-Layer Perceptron) scritta completamente da zero. L'obiettivo è mostrare in modo pratico come funziona il processo di apprendimento "sotto il cofano", usando solo logica matriciale con `numpy`, senza appoggiarsi a framework pronti.
 
-## Struttura del codice
+Include anche un **algoritmo genetico** per la ricerca automatica dell'architettura ottimale.
 
-Il progetto è modulare e si trova all'interno della cartella `src/`:
+## Struttura del progetto
 
-### 1. `src/nn_engine.py` - Il motore della rete
-Contiene la classe `neural_network`, che fa tutto il lavoro sporco per la rete flessibile. Gestisce la struttura multi-layer personalizzabile, calcola l'inoltro in avanti (`feedforward`) e gestisce l'aggiornamento dei pesi tramite l'algoritmo di backpropagation (`feedback`).
+```text
+neural_network_python/
+├── neural_network/           # Modulo principale
+│   ├── __init__.py
+│   ├── nn_engine.py          # Motore della rete (feedforward + backpropagation)
+│   ├── nn_layer.py           # Strati e funzioni di attivazione
+│   └── genetic_algorithm.py  # Algoritmo genetico per architecture search
+├── examples/
+│   └── xor_example.py        # Esempio: addestramento sulla porta logica XOR
+├── docs/
+│   ├── SRS.md                # Specifiche dei requisiti software
+│   └── appunti.md            # Note tecniche
+├── main.py                   # Entry point (dataset Iris + algoritmo genetico)
+└── requirements.txt
+```
 
-### 2. `src/nn_layer.py` - I singoli strati
-Contiene la classe `layer`, che rappresenta i mattoni della rete. Ogni layer gestisce i propri pesi (`W`) e bias (`b`). Questo modulo include anche un dizionario con funzioni di attivazione e relative derivate per fare un po' di tuning:
-- `relu` e `leaky_relu`
+## Moduli
+
+### `neural_network/nn_engine.py` - Il motore della rete
+
+Contiene la classe `neural_network`. Gestisce l'architettura multi-layer personalizzabile, il feedforward e l'aggiornamento dei pesi tramite backpropagation.
+
+### `neural_network/nn_layer.py` - I singoli strati
+
+Contiene la classe `layer` e le funzioni di attivazione con le relative derivate:
+
+- `relu`, `leaky_relu`
 - `sigmoid`
 - `linear`
+- `softmax`
 
-### 3. `src/test_nn_engine.py` - Il file di test
-Uno script di esempio che inizializza la rete e la addestra a risolvere la porta logica XOR, mostrando quanto rapidamente riesce a convergere sui dati corretti.
+### `neural_network/genetic_algorithm.py` - Algoritmo genetico
 
-## Requisiti ed esecuzione
+Cerca automaticamente la migliore architettura di rete tramite evoluzione. Ogni individuo è una lista di layer `[(n_neuroni, funzione), ...]`, valutato tramite accuracy sul dataset Iris.
 
-Moduli necessari:
-- `numpy`
+## Requisiti e installazione
 
-Per avviare l'addestramento di test del problema XOR:
 ```bash
-python src/test_nn_engine.py
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Utilizzo base
 
-Come creare una rete con un livello nascosto da 100 nodi:
-
 ```python
-from src.nn_engine import neural_network
-from src.nn_layer import relu, sigmoid
+from neural_network import neural_network
+from neural_network.nn_layer import relu, sigmoid
 
-# Crea la rete: 1 livello nascosto, 100 nodi, 2 input, 1 output, lr=0.2
-# Funzioni di attivazione: ReLU (nascosto), Sigmoide (output)
+# Rete con 2 layer nascosti: 8 nodi (sigmoid) + 100 nodi (relu)
+# 2 input, 1 output, learning rate 0.2
 nn = neural_network(
-    n_hidden_layer=1, 
-    size_hidden=100, 
-    size_input=2, 
-    size_output=1, 
-    learning_rate=0.2, 
-    hidden_function=relu, 
+    hidden_config=[(8, sigmoid), (100, relu)],
+    size_input=2,
+    size_output=1,
+    learning_rate=0.2,
     output_function=sigmoid
 )
 
-# Addestra (es. XOR validation)
+# Addestramento
 nn.feedback(input=[1, 0], target=[1])
 
-# Ottieni predizioni dalla rete
+# Predizione
 predizione = nn.feedforward([1, 0])
+```
+
+## Esempi
+
+```bash
+# Esempio XOR
+python examples/xor_example.py
+
+# Entry point principale (Iris + algoritmo genetico)
+python main.py
 ```
