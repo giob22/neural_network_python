@@ -1,0 +1,4 @@
+learning_rate,best_accuracy,best_fitness,n_layer,n_params,accuracy_baseline,architettura
+0.001,60.0,59.35,1,131,70.0,"[(16, 'leaky_relu')]"
+0.01,90.0,85.36,2,928,70.0,"[(23, 'leaky_relu'), (30, 'leaky_relu')]"
+0.05,96.67,95.65,1,203,70.0,"[(25, 'relu')]"

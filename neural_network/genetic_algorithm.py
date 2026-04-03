@@ -4,7 +4,7 @@ from .nn_engine import neural_network
 
 class GeneticAlgorithm:
 
-    def __init__(self, population_size, generations, mutation_rate, tournament_size, epochs, learning_rate, X_Train, Y_Train, X_val, Y_val):
+    def __init__(self, population_size, generations, mutation_rate, tournament_size, epochs, learning_rate, lambda_, X_Train, Y_Train, X_val, Y_val):
         self.population_size = population_size
         # numero di individui
         self.generations = generations
@@ -15,6 +15,8 @@ class GeneticAlgorithm:
         # quanti individui partecipano ad ogni torneo di selezione
         self.epochs = epochs
         self.learning_rate = learning_rate
+
+        self.lambda_ = lambda_
 
 
         self.X_train = X_Train
@@ -38,6 +40,15 @@ class GeneticAlgorithm:
         return cromosoma
 
 
+    def _complessita(self, individuo):
+        params = 0
+        prev = 4 # n of inputs
+        for n_neuroni, _ in individuo:
+            params += n_neuroni * prev + n_neuroni # pesi + bias
+            prev = n_neuroni
+        params += 3 * prev + 3 # output layer
+        return params
+
     def _fitness(self, individuo):
         sum_accuracy = 0
         for _ in range(0,self.K):
@@ -53,8 +64,10 @@ class GeneticAlgorithm:
                 if np.argmax(guess) == np.argmax(self.Y_val[i]):
                     correct += 1
             sum_accuracy += correct/len(self.X_val)
-        
-        return sum_accuracy/self.K
+        accuracy = sum_accuracy/self.K
+        penalita = self._complessita(individuo)
+        fitness = accuracy - self.lambda_ * penalita
+        return (fitness, accuracy)
         
     def _selezione(self, popolazione, fitness_scores):
         idx_t = random.sample(range(0, len(popolazione)), k=self.tournament_size)
@@ -79,7 +92,7 @@ class GeneticAlgorithm:
         for i in range(0,len(individuo)):
             if random.random() < self.mutation_rate:
                 new_layer = ()
-                mut = random.choices([0,1,2],[14,14,2])[0]
+                mut = random.choices([0,1,2],[1,1,1])[0]
                 if mut == 0: # mutano il numero di neuroni
                     new_layer = (random.randint(4,32), individuo[i][1])
                     individuo[i] = new_layer
@@ -104,8 +117,9 @@ class GeneticAlgorithm:
         # - storia della fitness media per generazione
         popolazione = [self._genera_individuo() for _ in range(0,self.population_size)]
 
-        storia_best_fitness = [] # migliore per generazione
-        storia_mean_fitness = [] # media per generazione
+        storia_best_fitness = [] # migliore per generazione della fitness
+        storia_best_accuracy = [] # migliore per generazione della accuracy
+        storia_mean_accuracy = [] # media per generazione dell'accuracy
 
         best_individuo = None
         best_fitness = 0
@@ -113,21 +127,29 @@ class GeneticAlgorithm:
         for i in range(0, self.generations):
 
             # valutiamo la fitness di ogni individuo della popolazione
-            fitness_scores = [self._fitness(individuo) for individuo in popolazione]
+            risultati = [self._fitness(individuo) for individuo in popolazione]
+            fitness_scores  = [r[0] for r in risultati]
+            accuracy_scores = [r[1] for r in risultati]
+            
 
             # Aggiornamento del migliore in assoluto
             idx_best = np.argmax(fitness_scores)
             if fitness_scores[idx_best] > best_fitness:
                 best_fitness = fitness_scores[idx_best]
                 best_individuo = popolazione[idx_best]
+                best_accuracy = accuracy_scores[idx_best]
                 
             
             # salviamo le statistiche
             storia_best_fitness.append(max(fitness_scores))
-            storia_mean_fitness.append(np.mean(fitness_scores))
+            storia_best_accuracy.append(max(accuracy_scores))
+            storia_mean_accuracy.append(np.mean(accuracy_scores))
 
             # stampa dell'avanzamento
-            print(f"[gen: {i:<10}] best fitness: {storia_best_fitness[-1]:<10} | mean fitness: {storia_mean_fitness[-1]}")
+            
+            print(f"[gen: {i:>3}] best fitness: {round(storia_best_fitness[-1]*100, 2):>5}% | best accuracy: {round(storia_best_accuracy[-1] * 100, 2):>5}% | mean accuracy: {round(storia_mean_accuracy[-1] * 100, 2):>5}% ")
+
+            
 
             # Nuova popolazione
             new_population = []
@@ -149,5 +171,5 @@ class GeneticAlgorithm:
                 new_population.append(figlio)
             popolazione = new_population
 
-        return (best_individuo, best_fitness, storia_best_fitness, storia_mean_fitness)
+        return (best_individuo, best_fitness, best_accuracy,storia_best_fitness, storia_best_accuracy, storia_mean_accuracy)
 

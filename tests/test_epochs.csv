@@ -1,0 +1,4 @@
+epochs,best_accuracy,best_fitness,n_layer,n_params,accuracy_baseline,architettura
+50,75.56,74.3,1,251,70.0,"[(31, 'relu')]"
+150,90.0,88.75,1,251,70.0,"[(31, 'leaky_relu')]"
+300,92.22,91.13,1,219,70.0,"[(27, 'relu')]"

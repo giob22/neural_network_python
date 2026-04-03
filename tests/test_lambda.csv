@@ -1,0 +1,4 @@
+lambda,best_accuracy,best_fitness,n_layer,n_params,accuracy_baseline,architettura
+0.0,98.89,98.89,7,5447,60.0,"[(31, 'relu'), (31, 'leaky_relu'), (31, 'leaky_relu'), (31, 'leaky_relu'), (31, 'leaky_relu'), (19, 'relu'), (31, 'leaky_relu')]"
+5e-05,88.89,87.83,1,211,60.0,"[(26, 'leaky_relu')]"
+0.0002,84.44,80.06,1,219,60.0,"[(27, 'relu')]"
