@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1775216094.63235 "/home/giobpc/Desktop/github_programs/neural_network_python/docs/studio/main.tex" "main.pdf" "main" 1775216101.20998 0
-  "/home/giobpc/Desktop/github_programs/neural_network_python/docs/studio/main.tex" 1775216090.74321 53815 2316b3006f8efcd8fb9f47a5cb9f812b ""
+["pdflatex"] 1775235660.89664 "/home/giobpc/Desktop/github_programs/neural_network_python/docs/studio/main.tex" "main.pdf" "main" 1775235662.57295 0
+  "/home/giobpc/Desktop/github_programs/neural_network_python/docs/studio/main.tex" 1775235660.70984 56821 7521717807edb2acded86f0e1ef68207 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc" 1254269338 2375 baa924870cfb487815765f9094cf3728 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc" 1202520719 3486 c7eadf5dcc57b3b2d11736679f6636ba ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
@@ -243,10 +243,10 @@
   "img/test_lambda.png" 1775205655.00602 358898 a8fcbe6b7675064efa12e3b41966399a ""
   "img/test_learning_rate.png" 1775207495.47232 259010 73eeae4395031b87fec81e1442419601 ""
   "img/test_mutation_rate.png" 1775205068.15593 355769 45a774aa8086fe45bcf89adc6ae80017 ""
-  "main.aux" 1775216100.73203 8709 4bdf2800a8d8bf0a526f15c034d50909 "pdflatex"
-  "main.out" 1775216100.73603 7497 729dfa5853b2820f90f9402a02afa879 "pdflatex"
-  "main.tex" 1775216090.74321 53815 2316b3006f8efcd8fb9f47a5cb9f812b ""
-  "main.toc" 1775216100.73703 3887 ba3a1e4cf76ca89b0517e9adc72f3ed9 "pdflatex"
+  "main.aux" 1775235662.46286 8833 6259d1e98581bb2ed54a2385f0b39997 "pdflatex"
+  "main.out" 1775235662.46386 7639 4c90c9ec9d86baf7968f40dd2613e623 "pdflatex"
+  "main.tex" 1775235660.70984 56821 7521717807edb2acded86f0e1ef68207 ""
+  "main.toc" 1775235662.46386 3970 d951bacc9ea8605473f421d6739951c7 "pdflatex"
   (generated)
   "main.aux"
   "main.log"

@@ -170,6 +170,36 @@ converge verso quelle che massimizzano l'accuratezza sul dataset Iris, tenendo
 conto anche della complessità computazionale della rete tramite una funzione
 di penalità.
 
+\subsection{NAS}
+
+Il NAS è la tecnica per automatizzare la progettazione di reti neurali artificiali (ANN) ovvero un modello ampiamente utilizzato nel machine learning. Serve come detto per evitare la specifica manuale dell'architettura di una rete neurale la quale potrebbe non essere ottimale in termini di efficienza e complessità spaziale e temporale.
+
+NAS è strettamente correlato all'ottimizzazione degli iperparametri e al meta-apprendimento ed è un sottocampo dell'\textit{automated machine learning}.
+
+\begin{itemize}
+    \item Gli \textbf{iperparametri} sono parametri che possono essere impostati per definire qualsiasi parte configurabile del processo di apprendimento di un modello
+    
+    Sono ad esempio:
+
+    \begin{itemize}
+        \item learning rate
+        \item topologia della rete
+        \item dimensione della rete
+        \item etc
+    \end{itemize}
+    
+    \item Il \textbf{meta learning} o \textbf{meta-apprendimento}, definito anche "apprendere ad apprendere", è una sottocategoria del machine learning che addestra i modelli di intelligenza artificiale (AI) a comprendere e ad adattarsi autonomamente alle nuove attività. L'obiettivo principale del meta learning è quello di fornire alle macchine le competenze necessarie per apprendere ad apprendere.
+    
+    Ciò che abbiamo implementato è un caso di \textbf{ottimizzazione annidata}: il GA opera a un livello superiore ottimizzando la struttura, mentre la backpropagation opera a un livello inferiore ottimizzando i pesi. C'è quindi una gerarchia di due ottimizzatori che agiscono su scale e parametri diversi.
+
+    Questo si avvicina concettualmente al meta-apprendimento, ma se ne differenzia nella sostanza: il meta-apprendimento vero accumula esperienza su molti dataset per estrarre principi generali di apprendimento. Il nostro sistema è specifico per un singolo dataset, quindi è più corretto definirlo \textit{architecture search} che meta-learning.
+
+    Ad esempio, un vero sistema di meta-learning imparerebbe: "i problemi con feature continue e poche classi tendono a beneficiare di reti con ReLU e pochi layer" --- principio valido su dataset diversi, non solo su Iris.
+\end{itemize}
+
+
+
+
 \subsection{Originalità e Rilevanza Pratica}
 
 Il progetto non è originale nel senso accademico del termine --- la NAS esiste
@@ -206,12 +236,15 @@ chiamate \textbf{neuroni}, organizzati in layer successivi. Ogni neurone riceve
 input dal layer precedente, li combina linearmente tramite pesi e bias,
 e applica una funzione di attivazione non lineare per produrre il proprio output.
 
-\subsubsection{Struttura di un Neurone}
+\subsubsection{Struttura di un Neurone e dei Layer}
 
-Per un singolo neurone l'output è calcolato come:
-
+Per un singolo neurone $i$ l'output è:
 \begin{equation}
-    \text{output} = f\!\left(\mathbf{W}\mathbf{x} + \mathbf{b}\right)
+    a_i = f\!\left(\mathbf{w}_i^T \mathbf{x} + b_i\right)
+\end{equation}
+Raggruppando tutti i neuroni di un layer in forma matriciale:
+\begin{equation}
+    \mathbf{a} = f\!\left(\mathbf{W}\mathbf{x} + \mathbf{b}\right)
 \end{equation}
 
 dove $\mathbf{W}$ è la matrice dei pesi, $\mathbf{x}$ il vettore di input,
@@ -241,10 +274,16 @@ trasformazioni lineari dell'input, incapace di apprendere pattern complessi.
 \begin{equation}
     f(x) = \max(0, x), \qquad f'(x) = \begin{cases} 1 & x > 0 \\ 0 & x \leq 0 \end{cases}
 \end{equation}
-Ideale per gli hidden layer: computazionalmente efficiente e non soffre del
-problema del gradiente che svanisce per valori positivi. Ha però il problema
-dei \textit{neuroni morti} --- se l'input è sempre negativo il neurone smette
-di attivarsi e il suo gradiente è sempre zero.
+È la funzione più usata negli hidden layer perché computazionalmente
+efficiente e \emph{mitiga} il problema del vanishing gradient per
+valori positivi: la sua derivata è esattamente 1, quindi il contributo
+della funzione di attivazione al gradiente non si riduce attraversando
+il layer (a differenza di Sigmoid che satura). Ha però il problema
+dei \textit{neuroni morti}: se il valore di pre-attivazione
+$z = \mathbf{w}^T\mathbf{x} + b$ di un neurone è sistematicamente
+negativo, ReLU restituisce sempre 0 e la derivata è sempre 0.
+Il neurone smette di ricevere aggiornamenti e non impara più nulla.
+Leaky ReLU nasce proprio per risolvere questo limite.
 
 \vspace{0.3cm}
 \noindent\textbf{Leaky ReLU}
@@ -273,9 +312,12 @@ output in problemi di \textbf{classificazione multi-classe} come Iris.
 
 \begin{concetto}{Perché Softmax solo sull'output layer?}
 La Softmax è definita su un vettore e il suo output dipende da \emph{tutti}
-i valori del vettore contemporaneamente. Non ha senso applicarla a un singolo
-neurone isolato in un hidden layer, perché l'operazione $e^{x_i}/\sum_j e^{x_j}$
-su un singolo numero darebbe sempre 1. Negli hidden layer si usano funzioni
+i valori del vettore contemporaneamente. Applicarla in un hidden layer
+creerebbe due problemi: (1) tutti i neuroni del layer dovrebbero sommare a 1,
+forzandoli a \emph{competere} tra loro invece di apprendere feature
+indipendenti; (2) se il layer avesse un solo neurone, l'operazione
+$e^{x}/e^{x} = 1$ darebbe costantemente 1, azzerando il gradiente e
+bloccando l'apprendimento. Negli hidden layer si usano funzioni
 elemento-per-elemento come ReLU e Sigmoid.
 \end{concetto}
 
@@ -929,7 +971,7 @@ architetture buone da cattive e non evolve efficacemente.
 
 \textbf{Da 150 a 300 epoche} il miglioramento è solo +2.22\% a fronte di un
 raddoppio del tempo totale di esecuzione ($20 \times 3 \times 300 \times 30
-= 54.000$ training). Caso classico di \textbf{rendimenti decrescenti}.
+= 540.000$ training). Caso classico di \textbf{rendimenti decrescenti}.
 
 \textit{Valore ottimale: \textbf{epochs = 150}}
 
@@ -1134,8 +1176,10 @@ La tabella seguente riassume i valori ottimali identificati:
         per valutare le prestazioni su dati mai visti.
 
     \item[Vanishing gradient] Problema per cui i gradienti diventano
-        estremamente piccoli nelle prime fasi del training, rallentando
-        o impedendo l'apprendimento (tipico di Sigmoid su reti profonde).
+        estremamente piccoli nei \emph{layer iniziali} della rete durante
+        la backpropagation, rallentando o impedendo l'apprendimento di
+        quei layer (tipico di Sigmoid su reti profonde, dove la derivata
+        satura verso 0).
 \end{description}
 
 % ════════════════════════════════════════════════════════════
