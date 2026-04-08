@@ -74,21 +74,30 @@ class neural_network:
 
         return {'guess': res, 'input_vals': valori_input, 'intermediate_vals': valori_intermedi}
 
-    def feedback(self, input, target):
+    def feedback(self, inputs, target):
         """
         @brief Esegue un passo di backpropagation e aggiorna pesi e bias.
 
         Chiama internamente feedforward per ottenere guess e valori intermedi,
-        calcola i delta con la regola della catena partendo dall'output, poi
-        aggiorna ogni layer con la discesa del gradiente (SGD).
+        calcola i delta con la regola della catena partendo dall'output layer,
+        poi aggiorna ogni layer con la discesa del gradiente (SGD).
 
-        @param input (array-like) Vettore di input di lunghezza size_input.
+        I delta vengono accumulati in ordine inverso rispetto ai layer:
+        @code
+          deltas = [delta_out, delta_hidden_N, ..., delta_hidden_0]
+        @endcode
+        L'aggiornamento usa indicizzazione negativa diretta su deltas per
+        evitare la creazione di una lista rovesciata:
+        - hidden layer i  →  deltas[-(i+1)]
+        - output layer    →  deltas[0]
+
+        @param inputs (array-like) Vettore di input di lunghezza size_input.
         @param target (array-like) Vettore target atteso di lunghezza size_output.
         @note Modifica direttamente i pesi e i bias di tutti i layer (side effect).
         @note Utilizza la MSE come funzione di loss.
         """
         target = np.array(target).reshape(-1,1)
-        res = self.feedforward(input)
+        res = self.feedforward(inputs)
         guess = res['guess']
         valori_intermedi = res['intermediate_vals']
         valori_input = res['input_vals']
@@ -115,20 +124,17 @@ class neural_network:
 
             next_W = self.hiddens_layers[i].W
 
-        # AGGIORNAMENTO DEI PARAMETRI
-
-        # PESI e BIAS
-        # in modo che facciamo corrispondere gli indici dei delta
-        # Se prima era [output, hidden_N, ..., hidden_0]
-        # Ora diventa [hidden_0, hidden_1, ..., output]
-        deltas_rev = list(reversed(deltas))
+        # AGGIORNAMENTO DEI PARAMETRI (PESI e BIAS)
+        # deltas = [delta_out, delta_hidden_N, ..., delta_hidden_0]
+        # Per hidden layer i: deltas[-(i+1)]   (es. i=0 → deltas[-1] = delta_hidden_0)
+        # Per output layer:   deltas[0]
 
         for i in range(len(self.hiddens_layers)):
-            self.hiddens_layers[i].W -= self.lr * (deltas_rev[i] @ valori_input[i].T)
-            self.hiddens_layers[i].b -= self.lr * deltas_rev[i]
+            self.hiddens_layers[i].W -= self.lr * (deltas[-(i + 1)] @ valori_input[i].T)
+            self.hiddens_layers[i].b -= self.lr * deltas[-(i + 1)]
 
-        self.output_layer.W -= self.lr * (deltas_rev[-1] @ valori_input[-1].T)
-        self.output_layer.b -= self.lr * deltas_rev[-1]
+        self.output_layer.W -= self.lr * (deltas[0] @ valori_input[-1].T)
+        self.output_layer.b -= self.lr * deltas[0]
 
 
     def MSE(self, target, guess):
@@ -167,7 +173,7 @@ class neural_network:
         testo = "-"* 35 + "\n" +f"Caratteristiche della rete neurale:\n#layer: {self.size:<10}\n"
         i = 0
         for x in self.hiddens_layers:
-            testo += f"{i}. neuroni: {x.W.size:<10}\n"
+            testo += f"{i}. neuroni: {x.W.shape[0]:<10}\n"
             i+=1
         testo += f"output. neuroni: {self.output_layer.W.shape[0]:<10}\n" + "-"*35+ "\n"
         return testo
