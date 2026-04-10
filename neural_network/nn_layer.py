@@ -102,9 +102,17 @@ def softmax(x):
     @param x (numpy.ndarray) Vettore colonna di punteggi pre-attivazione.
     @return (numpy.ndarray) Vettore di probabilità con somma 1.
     @note Opera sull'intero vettore, non elemento per elemento.
+    @note Se tutti i valori di exp(x - max(x)) underflowano a 0.0 (input
+          estremamente negativi), la somma sarebbe 0 e la divisione produrrebbe
+          NaN. In quel caso la funzione restituisce una distribuzione uniforme
+          1/n per ciascuna classe, evitando la propagazione di NaN nel calcolo
+          della fitness e nei grafici matplotlib.
     """
     e_x = np.exp(x - np.max(x))
-    return e_x / e_x.sum()
+    total = e_x.sum()
+    if total == 0.0:
+        return np.full_like(e_x, 1.0 / len(e_x))
+    return e_x / total
 
 
 def d_softmax(x):

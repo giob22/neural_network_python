@@ -279,6 +279,10 @@ class GeneticAlgorithm:
         @note Se self.seed è impostato, i worker di ProcessPoolExecutor ricevono seed
               deterministici derivati come `seed + gen * population_size + idx_individuo`,
               garantendo riproducibilità completa anche con valutazione parallela.
+        @note Le statistiche per generazione usano np.nanargmax, np.nanmax e np.nanmean
+              invece delle versioni base: se un worker restituisce NaN (es. per underflow
+              numerici nella rete), la generazione non viene invalidata e il plot matplotlib
+              non riceve valori infiniti o NaN.
         """
         # Cosa deve restituire:
         # - miglior architettura trovata
@@ -297,7 +301,7 @@ class GeneticAlgorithm:
         for i in range(0, self.generations):
 
             # valutiamo la fitness di ogni individuo della popolazione
-            # risultati = [self._fitness(individuo) for individuo in popolazione]
+            # risultati = [self._fitness(individuo,self.seed) for individuo in popolazione]
             # I seed per i worker sono derivati dal seed principale + indice generazione + indice individuo,
             # così ogni valutazione è deterministica e distinta anche tra generazioni diverse.
             worker_seeds = [
@@ -311,7 +315,7 @@ class GeneticAlgorithm:
 
 
             # Aggiornamento del migliore in assoluto
-            idx_best = np.argmax(fitness_scores)
+            idx_best = np.nanargmax(fitness_scores)
             if fitness_scores[idx_best] > best_fitness:
                 best_fitness = fitness_scores[idx_best]
                 best_individuo = popolazione[idx_best]
@@ -319,13 +323,10 @@ class GeneticAlgorithm:
 
 
             # salviamo le statistiche
-            storia_best_fitness.append(max(fitness_scores))
-            storia_best_accuracy.append(max(accuracy_scores))
-            
-            # storia_best_fitness.append(max(fitness_scores))
-            # storia_best_accuracy.append(max(accuracy_scores))
+            storia_best_fitness.append(np.nanmax(fitness_scores))
+            storia_best_accuracy.append(np.nanmax(accuracy_scores))
 
-            storia_mean_accuracy.append(np.mean(accuracy_scores))
+            storia_mean_accuracy.append(np.nanmean(accuracy_scores))
 
             # stampa dell'avanzamento
             print(f"[gen: {i:>3}] best fitness: {round(storia_best_fitness[-1]*100, 2):>5} | best accuracy: {round(storia_best_accuracy[-1] * 100, 2):>5}% | mean accuracy: {round(storia_mean_accuracy[-1] * 100, 2):>5}% ")
