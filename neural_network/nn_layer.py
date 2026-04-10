@@ -129,7 +129,7 @@ function_hidden = {relu: drelu, linear: d_linear, sigmoid: d_sigmoid, leaky_relu
 
 
 class layer:
-    def __init__(self, row, col, activation_function):
+    def __init__(self, row, col, activation_function, rng=None):
         """
         @brief Costruisce un layer della rete neurale con pesi e bias inizializzati casualmente.
 
@@ -137,12 +137,17 @@ class layer:
         @param col (int) Numero di neuroni del layer precedente (colonne della matrice pesi).
         @param activation_function (callable) Funzione di attivazione del layer;
                deve essere una chiave presente in function_hidden.
+        @param rng (numpy.random.Generator | None) Generatore NumPy isolato per la
+               riproducibilità. Se None usa np.random globale (comportamento legacy).
+               Passare un Generator creato con numpy.random.default_rng(seed) garantisce
+               che l'inizializzazione dei pesi sia deterministica e isolata dagli altri layer.
         @note I pesi e il bias sono inizializzati con distribuzione uniforme in [-0.5, 0.5].
         """
-        self.weights = np.random.uniform(-0.5, 0.5, size=(row, col))
+        _rng = rng if rng is not None else np.random
+        self.weights = _rng.uniform(-0.5, 0.5, size=(row, col))
         self.func = activation_function
         self.dfunc = function_hidden[self.func]
-        self.bias = np.random.uniform(-0.5, 0.5, size=(row, 1))
+        self.bias = _rng.uniform(-0.5, 0.5, size=(row, 1))
 
     @property
     def W(self):

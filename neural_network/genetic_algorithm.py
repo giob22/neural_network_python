@@ -143,19 +143,22 @@ class GeneticAlgorithm:
         [0.05, 0.30] anziché dover usare valori dell'ordine di 1e-5 per la versione lineare.
 
         @param individuo (list[tuple[int, callable]]) Cromosoma da valutare.
-        @param seed (int | None) Seed per il RNG locale del worker. Se None, non deterministico.
+        @param seed (int | None) Seed per i due RNG locali del worker:
+                   - random.Random(seed): scelta dei campioni di training per SGD.
+                   - numpy.random.default_rng(seed): inizializzazione pesi/bias di ogni rete.
                    In run() viene passato un seed derivato da self.seed per garantire
-                   riproducibilità anche con ProcessPoolExecutor.
+                   riproducibilità completa anche con ProcessPoolExecutor. Se None, non deterministico.
         @return (tuple[float, float]) Coppia (fitness, accuracy) dove:
                 - fitness = accuracy - lambda_ * log10(n_params)
                 - accuracy = media delle K valutazioni sul validation set, in [0, 1].
         @note K valutazioni indipendenti riducono la varianza dovuta all'inizializzazione casuale.
         @note La fitness può essere negativa se lambda_ è molto alto e la rete è complessa.
         """
-        rng = random.Random(seed)  # RNG locale al worker: isolato dagli altri processi
+        rng = random.Random(seed)          # RNG locale (Python) per la scelta dei campioni
+        np_rng = np.random.default_rng(seed)  # RNG locale (NumPy) per l'inizializzazione dei pesi
         sum_accuracy = 0
         for _ in range(0, self.K):
-            n = neural_network(individuo, self.n_feature, self.n_output, self.learning_rate, softmax)
+            n = neural_network(individuo, self.n_feature, self.n_output, self.learning_rate, softmax, rng=np_rng)
             # ADDESTRAMENTO → training set
             for _ in range(0, self.epochs):
                 x = rng.randint(0, len(self.Y_train) - 1)

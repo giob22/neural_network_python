@@ -2,7 +2,7 @@ import numpy as np
 from .nn_layer import layer
 
 class neural_network:
-    def __init__(self, hidden_config, size_input, size_output, learning_rate, output_function):
+    def __init__(self, hidden_config, size_input, size_output, learning_rate, output_function, rng=None):
         """
         @brief Costruisce una rete neurale multi-layer con architettura personalizzabile.
 
@@ -12,6 +12,9 @@ class neural_network:
         @param size_output (int) Numero di neuroni nel layer di output.
         @param learning_rate (float) Passo di aggiornamento dei pesi nella backpropagation.
         @param output_function (callable) Funzione di attivazione del layer di output.
+        @param rng (numpy.random.Generator | None) Generatore NumPy isolato, propagato a ogni
+               layer per l'inizializzazione deterministica di pesi e bias.
+               Creare con numpy.random.default_rng(seed). Se None usa np.random globale.
         @note Il layer di output viene sempre aggiunto automaticamente; non va incluso in hidden_config.
         """
         self.size = len(hidden_config) + 1 #1 per l'output layer sempre presente
@@ -25,10 +28,10 @@ class neural_network:
         # creo i layer intermedi (hidden) + input layer
         prev = size_input
         for rows, f in hidden_config:
-            self.hiddens_layers.append(layer(rows, prev, f))
+            self.hiddens_layers.append(layer(rows, prev, f, rng=rng))
             prev = rows
 
-        self.output_layer = layer(size_output, prev, output_function)
+        self.output_layer = layer(size_output, prev, output_function, rng=rng)
 
 
     def feedforward(self, x):

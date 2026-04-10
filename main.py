@@ -49,7 +49,7 @@ def accuracy_base(individuo, n_feature, n_output, learning_rate, epochs, Y_train
 K = 5 # numero di addestramenti per individuo
 
 POPULATION_SIZE = 50
-GENERATIONS = 100
+GENERATIONS = 30
 MUTATION_RATE = 0.2
 TOURNAMENT_SIZE = 10
 EPOCHS =  250 #150
@@ -148,7 +148,8 @@ if __name__ == "__main__":
                           n_output= n_classi,
                           K=K,
                           X_Train=x_train, Y_Train=y_train,
-                          X_val=x_val, Y_val=y_val)
+                          X_val=x_val, Y_val=y_val,
+                          seed=42)
     
     start_time = time.perf_counter()
 
