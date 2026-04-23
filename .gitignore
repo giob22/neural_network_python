@@ -11,6 +11,7 @@ __pycache__/
 review.*
 prove.py
 feature.md
+graphics.md
 
 # Distribution / packaging
 .Python

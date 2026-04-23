@@ -3,9 +3,11 @@ from neural_network.nn_layer import softmax, leaky_relu, relu, linear
 import numpy as np
 import random
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 from sklearn.datasets import load_iris, load_digits, load_wine, load_breast_cancer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
+
 
 
 import time
@@ -13,6 +15,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
+
 
 def one_hot(y, n_classes=3):
     """
@@ -44,7 +47,7 @@ def number_params(input_size, individuo, output_size):
     params += output_size * prev + output_size
     return params
 
-def accuracy_base(individuo, n_feature, n_output, learning_rate, epochs, Y_train, X_train, Y_val, X_val, K, seed=None):
+def mean_accuracy_on_K_runs(individuo, n_feature, n_output, learning_rate, epochs, Y_train, X_train, Y_val, X_val, K, seed=None):
     """
     @brief Valuta l'accuracy media di un'architettura su K addestramenti indipendenti.
 
@@ -87,9 +90,25 @@ def accuracy_base(individuo, n_feature, n_output, learning_rate, epochs, Y_train
 
     return accuracy
 
+def accuracy_on_test_set(rete_best: neural_network, epochs, x_train, y_train, x_test, y_test, seed=42):
+    rng = random.Random(seed)
+    for _ in range(epochs):
+        idx = rng.randint(0, len(x_train) - 1)
+        rete_best.feedback(x_train[idx], y_train[idx])
+
+    # valutiamo sul test set
+    correct_test = sum(1 for i in range(len(x_test)) if np.argmax(rete_best.feedforward(x_test[i])['guess']) == np.argmax(y_test[i]))
+
+    accuracy_test = correct_test / len(x_test)
+
+    return accuracy_test
+    
 
 
-K = 5 # numero di addestramenti per individuo
+
+SEED = 0
+
+K = 10 # numero di addestramenti per individuo
 
 POPULATION_SIZE = 80
 GENERATIONS = 30
@@ -97,7 +116,7 @@ MUTATION_RATE = 0.2
 TOURNAMENT_SIZE = 10
 EPOCHS =  250 #150
 LEARNING_RATE = 0.01
-LAMBDA_ = 0.11
+LAMBDA_ = 0.1
 
 EPOCHS_BASELINE = EPOCHS
 
@@ -105,7 +124,7 @@ EPOCHS_BASELINE = EPOCHS
 if __name__ == "__main__":
 
     # load del dataset
-    dataset = load_digits()
+    dataset = load_iris()
     
     x = dataset.data
     y = dataset.target
@@ -129,23 +148,39 @@ if __name__ == "__main__":
     
     
 
-    # split train/validation
+    # split train/validation/test
+    # abbiamo aggiunto test perché in questo caso abbiamo due algoritmi di ottimizzazione
+    # backpropagation che ottimizza una rete sul training set
+    # genetic_algorithm che ottimizza una popolazione di reti sul validation set
+    # quindi i risultati che otterremmo sono OTTIMISTICI
+    # Quindi aggiungiamo l'ultimo set, il test set, che utilizzeremo per calcolare la accuracy 
+    # della rete migliore trovata
 
-    x_train, x_val, y_train, y_val = train_test_split(x,y,test_size=0.2, random_state=42)
+    # x_train, x_val, y_train, y_val = train_test_split(x,y,test_size=0.2, random_state=SEED)
+
+    
+    # primo split: separa il test set (20% del totale) → non sarà mai usato nel GA
+    x_trainval, x_test, y_trainval, y_test = train_test_split(x,y,test_size=0.2, random_state=SEED)
+    # secondo split: separa val dal rimanente 80% → usato dal GA per valutare la fitness
+    x_train, x_val, y_train, y_val = train_test_split(x_trainval, y_trainval, test_size=0.25, random_state=SEED)
+    # 0.25 x 0.80 = 0.2 del totale → split finale 60/20/20
 
 
-    # usiamo random_state=42 per fissare il seed in modo che il risultato sia riproducibile
+    # usiamo random_state=SEED per fissare il seed in modo che il risultato sia riproducibile
     # ogni volta che eseguo il programma ottengo lo stesso split, mi permette di confrontare i risultati tra run diverse
 
     # Normalizzazione
     # X ← (X - media(X)) / std(X)
     scaler = StandardScaler()
-    x_train = scaler.fit_transform(x_train)
-    x_val = scaler.transform(x_val)
+    x_train = scaler.fit_transform(x_train) # fit + trasform
+    x_val = scaler.transform(x_val) #. solo trasform
+    x_test = scaler.transform(x_test) #. solo trasform  
 
     
     y_train = one_hot(y_train, n_classes=n_classi)
     y_val = one_hot(y_val, n_classes=n_classi)
+    y_test = one_hot(y_test, n_classes=n_classi)
+
 
 
     # BASELINE con backpropagation classica
@@ -166,17 +201,17 @@ if __name__ == "__main__":
     #         correct += 1
     # accuracy_baseline = correct/len(x_val)
 
-    accuracy_baseline = accuracy_base(cromosoma_baseline,
+    accuracy_baseline = mean_accuracy_on_K_runs(cromosoma_baseline,
                   input_size,
                   n_classi,
                   LEARNING_RATE,
                   EPOCHS_BASELINE,
                   y_train,
                   x_train,
-                  y_val,
-                  x_val,
+                  y_test,
+                  x_test,
                   K,
-                  seed=42)
+                  seed=SEED)
     logger.info(f"accuracy della rete baseline: {round((accuracy_baseline) * 100, 2)}%\n#params: {number_params(input_size, cromosoma_baseline, n_classi)}")
 
     # ESECUZIONE DEL Genetic Algorithm
@@ -193,7 +228,7 @@ if __name__ == "__main__":
                           K=K,
                           X_Train=x_train, Y_Train=y_train,
                           X_val=x_val, Y_val=y_val,
-                          seed=42)
+                          seed=SEED)
     
     start_time = time.perf_counter()
 
@@ -201,6 +236,26 @@ if __name__ == "__main__":
     
     stop_time = time.perf_counter()
     logger.info(f"tempo di esecuzione: {stop_time - start_time}")
+
+
+    # -------------
+    # Calcolo accuracy della rete migliore trovata
+    # rng_test = np.random.default_rng(SEED)
+    
+    # best_net = neural_network(best_individuo, input_size, n_classi, LEARNING_RATE, softmax, rng_test)
+    
+    # test_accuracy = accuracy_on_test_set(best_net, EPOCHS, x_train, y_train, x_test, y_test, SEED)
+    test_accuracy = mean_accuracy_on_K_runs(best_individuo, input_size, n_classi, LEARNING_RATE, EPOCHS, y_train, x_train, y_test, x_test, K=K, seed=SEED)
+
+    logger.info(f"Accuracy sul validation set (ottimizzazione GA): {round(best_accuracy*100, 2)}%")
+    logger.info(f"Accuracy sul test set (stima reale): {round(test_accuracy*100, 2)}%")
+
+    # Se accuracy_test < accuracy_val di qualche punto percentuale, conferma che il leakage era reale e che ora è eliminato.
+
+    ########################################GRAFICA########################################
+
+
+
     
     
     best_individuo = [(neuroni, funzione.__name__) for neuroni, funzione in best_individuo]
@@ -219,12 +274,14 @@ if __name__ == "__main__":
     
 
     
-    linespace_gen = list(range(1, GENERATIONS + 1))
-
+    # formatting
     best_fitness_pct  = [v * 100 for v in storia_best_fitness]
     best_accuracy_pct = [v * 100 for v in storia_best_accuracy]
     mean_accuracy_pct = [v * 100 for v in storia_mean_accuracy]
     baseline_pct      = accuracy_baseline * 100
+    test_accuracy_pct = round(test_accuracy * 100, 2)
+
+    linespace_gen = list(range(1, GENERATIONS + 1))
 
     max_hidden = max(len(best_individuo), len(cromosoma_baseline))
     font_info  = max(8, 12 - max(0, max_hidden+1))
@@ -251,30 +308,85 @@ if __name__ == "__main__":
 
     # --- Grafico superiore: Accuracy ---
     ax_acc.plot(linespace_gen, best_accuracy_pct,
-                color="#344966", linewidth=2,
+                color="#344966",
+                linewidth=2,
                 label="Miglior accuracy della generazione")
     ax_acc.plot(linespace_gen, mean_accuracy_pct,
-                color="#D57D00", linewidth=1.5, linestyle='--',
+                color="#D57D00",
+                linewidth=1.5,
+                linestyle='--',
                 label="Accuracy media della popolazione")
+    ax_acc.axhline(test_accuracy_pct,
+                   color="#8B008B",
+                   linewidth=2.0,
+                   label=f"Accuracy test - stima reale ({test_accuracy_pct:.1f})")
+
+
     ax_acc.axhline(baseline_pct, color="#C30000B2", linestyle='dashed', linewidth=1.8,
-                   label=f"Baseline backprop ({baseline_pct:.1f}%)")
+                   label=f"Baseline backprop - test set ({baseline_pct:.1f}%)")
 
     # annotazione valore finale best accuracy
+    # val (ottimistica - GA ha selezionato su questo)
     ax_acc.annotate(
-        f"{best_accuracy:.1f}%",
+        f"val: {best_accuracy:.1f}%",
         xy=(idx_best + 1, best_accuracy),
-        xytext=(0, -20), textcoords='offset points',
+        xytext=(-60, -20), textcoords='offset points',
         fontsize=10, color='#228B22', fontweight='extra bold',
-        arrowprops=dict(arrowstyle='->', color='#228B22', lw=1.5)
+        arrowprops=dict(arrowstyle='->', color='#228B22', lw=1.5),
+        zorder=5
     )
-    ax_acc.scatter(idx_best + 1, best_accuracy, c='#228B22', marker='o')
+    ax_acc.scatter(idx_best + 1, best_accuracy, c='#228B22', marker='o', zorder=5)
+
+    ax_acc.annotate(
+        f"test: {test_accuracy_pct:.1f}",
+        xy=(GENERATIONS, test_accuracy_pct),
+        xytext=(-60,-20),
+        textcoords='offset points',
+        fontsize=10,
+        color='#8B008B',
+        fontweight='extra bold',
+        arrowprops=dict(arrowstyle='->', color='#8B008B', lw=1.5),
+        zorder=5
+    )
+
+
+
+    all_values = np.concatenate([ best_fitness_pct, best_accuracy_pct, mean_accuracy_pct, np.array([baseline_pct]), np.array([test_accuracy_pct])])
+    
+    min_ax_value = round(np.min(all_values), 2) - 5
+    max_ax_value = round(np.max(all_values), 2) + 5
+
+
+    # data leakage: rappresentazione del costo del leakage, ovvero quanto il GA ha "comprato" dall'ottimizzazione su val.
+    ax_acc.annotate('', 
+                    xy=(idx_best + 1, min(best_accuracy, test_accuracy_pct)),
+                    xytext=(idx_best + 1, max(test_accuracy_pct, best_accuracy)),
+                    arrowprops=dict(arrowstyle="<-", color="#1D1C1D", lw=1.8),
+                    )
+    ax_acc.fill_between(
+        linespace_gen,
+        test_accuracy_pct,
+        best_accuracy_pct,
+        where=[b > test_accuracy_pct for b in best_accuracy_pct],
+        alpha=0.12, color='#8B008B',
+        label="Regione bias ottimistico (val > test)"
+    )
+
+
+
+
+
+    gap = round(best_accuracy - test_accuracy_pct, 1)
+    gap_handle = mlines.Line2D([], [], color='#1D1C1D', linewidth=1.8,
+                               label=f"bias ottimistico ~{gap:+.1f}%")
 
     ax_acc.set_ylabel("Accuracy (%)", fontsize=11)
-    ax_acc.set_ylim(0, 110)
-    ax_acc.legend(loc='lower right', fontsize=9, framealpha=0.9)
+    ax_acc.set_ylim(min_ax_value, max_ax_value)
+    handles, labels = ax_acc.get_legend_handles_labels()
+    ax_acc.legend(handles=handles + [gap_handle], loc='lower right', fontsize=9, framealpha=0.9)
     ax_acc.grid(True, alpha=0.3)
     ax_acc.set_title(
-        "Accuratezza — quanto bene classifica la rete migliore e la popolazione media",
+        "Accuratezza — val (usato dal GA) vs test (stima reale non viziata)",
         fontsize=10
     )
 
@@ -295,12 +407,12 @@ if __name__ == "__main__":
         arrowprops=dict(arrowstyle='->', color='#228B22', lw=1.5)
     )
 
-    ax_fit.scatter(idx_best + 1, best_fitness, c='#228B22', marker='o')
+    ax_fit.scatter(idx_best + 1, best_fitness, c='#228B22', marker='o', zorder=5)
 
     ax_fit.set_xlabel("Generazione", fontsize=11)
     ax_fit.set_ylabel("Fitness", fontsize=11)
     ax_fit.set_xlim(1, GENERATIONS)
-    ax_fit.set_ylim(0, 110)
+    ax_fit.set_ylim(min_ax_value, max_ax_value)
     ax_fit.legend(loc='lower right', fontsize=9, framealpha=0.9)
     ax_fit.grid(True, alpha=0.3)
     ax_fit.set_title(
@@ -314,16 +426,17 @@ if __name__ == "__main__":
     testo_best = f"Migliore architettura trovata:\n\nInput: {input_size} neuroni\n\n"
     for i, (neuroni, funzione) in enumerate(best_individuo):
         testo_best += f"Hidden layer {i + 1}: {neuroni:<3} neuroni → {funzione}\n"
-    testo_best += f"\nOutput: 3 neuroni → {output_function.__name__}"
-    testo_best += f"\n\nAccuracy: {best_accuracy}%"
+    testo_best += f"\nOutput: {n_classi} neuroni → {output_function.__name__}"
+    testo_best += f"\n\nAccuracy val (GA): {best_accuracy}%"
+    testo_best += f"\n\nAccuracy test (stima reale): {test_accuracy_pct}%"
     testo_best += f"\nFitness: {best_fitness}"
     testo_best += f"\n#parametri: {number_params(input_size, best_individuo, n_classi)}"
 
     testo_base = f"Architettura Baseline:\n\nInput: {input_size} neuroni\n\n"
     for i, (neuroni, funzione) in enumerate(cromosoma_baseline):
         testo_base += f"Hidden layer {i + 1}: {neuroni:<3} neuroni → {funzione.__name__}\n"
-    testo_base += f"\nOutput: 3 neuroni → {output_function.__name__}"
-    testo_base += f"\n\nAccuracy: {round(accuracy_baseline * 100, 2)}%"
+    testo_base += f"\nOutput: {n_classi} neuroni → {output_function.__name__}"
+    testo_base += f"\n\nAccuracy test: {round(accuracy_baseline * 100, 2)}%"
     testo_base += f"\n#parametri: {number_params(input_size, cromosoma_baseline, n_classi)}"
 
     # posizioni y adattive: più layer → testo più alto → spazio più equo
