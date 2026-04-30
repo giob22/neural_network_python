@@ -181,7 +181,7 @@ class neural_network:
         @note guess viene clippato in [1e-12, 1.0] per evitare log(0) → -inf.
         """
         guess_clipped = np.clip(guess, 1e-12, 1.0)
-        return np.sum(target * np.log(guess_clipped))
+        return -np.sum(target * np.log(guess_clipped))
     
     def dCE_softmax(self, target, guess):
         """

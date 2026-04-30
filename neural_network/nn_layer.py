@@ -155,7 +155,7 @@ class layer:
         """
         _rng = rng if rng is not None else np.random
 
-        # TODO spiega perché si sta utilizzando un modo diverso per assegnare i valori ai pesi, ovvero il problema del dying ReLU e la saturazione della sigmoid
+        # ! spiega perché si sta utilizzando un modo diverso per assegnare i valori ai pesi, ovvero il problema del dying ReLU e la saturazione della sigmoid
         if activation_function in (relu, leaky_relu):
             std = np.sqrt(2/col) #He: compensa ReLU che taglia metà attivazioni
         else:

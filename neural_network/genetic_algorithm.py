@@ -14,7 +14,7 @@ MAX_LAYER = 10
 
 class GeneticAlgorithm:
 
-    def __init__(self, population_size, generations, mutation_rate, tournament_size, epochs, learning_rate, n_feature, n_output, K, lambda_, X_Train, Y_Train, X_val, Y_val, min_neuroni=MIN_NEURONI, max_neuroni=MAX_NEURONI, min_layer=MIN_LAYER, max_layer=MAX_LAYER, seed=None):
+    def __init__(self, population_size, generations, mutation_rate, tournament_size, epochs, learning_rate, n_feature, n_output, K, lambda_, X_Train, Y_Train, X_val, Y_val, min_neuroni=MIN_NEURONI, max_neuroni=MAX_NEURONI, min_layer=MIN_LAYER, max_layer=MAX_LAYER, seed=None, max_workers=None):
         """
         @brief Inizializza l'algoritmo genetico per la ricerca automatica dell'architettura.
 
@@ -50,6 +50,8 @@ class GeneticAlgorithm:
         self.max_layer = max_layer
         self.max_neuroni = max_neuroni 
 
+
+        self.max_workers = max_workers
         self.seed = seed
         self.rng = random.Random(seed)  # RNG isolato: non interferisce con il random globale
 
@@ -199,14 +201,17 @@ class GeneticAlgorithm:
         """
         @brief Genera un figlio combinando due genitori con punto di taglio variabile.
 
-        Sceglie un punto di taglio indipendente per ciascun genitore e costruisce
-        il figlio con i primi t1 layer di genitore1 e i layer da t2 in poi di genitore2.
+        Sceglie un punto di taglio indipendente per ciascun genitore (t1 in [0, len(g1)],
+        t2 in [0, len(g2)]) e costruisce il figlio con i primi t1 layer di genitore1
+        e i layer da t2 in poi di genitore2.
 
         @param genitore1 (list[tuple[int, callable]]) Primo cromosoma genitore.
         @param genitore2 (list[tuple[int, callable]]) Secondo cromosoma genitore.
-        @return (list[tuple[int, callable]]) Cromosoma figlio.
-        @note Se il crossover produce un figlio vuoto, viene inserito un gene casuale
-              dal pool dei due genitori.
+        @return (list[tuple[int, callable]]) Cromosoma figlio con lunghezza in [1, max_layer].
+        @note Se il crossover produce un figlio vuoto (t1=0 e t2=len(g2)), viene inserito
+              un gene casuale scelto dal pool dei layer dei due genitori.
+        @note Il figlio viene troncato a self.max_layer se la concatenazione supera il limite:
+              questo evita la crescita indefinita della profondità nelle generazioni successive.
         """
         t1 = self.rng.randint(0, len(genitore1))
         t2 = self.rng.randint(0, len(genitore2))
@@ -216,6 +221,9 @@ class GeneticAlgorithm:
         if len(figlio) == 0:
             pool = genitore1 + genitore2
             figlio.append(self.rng.choice(pool))
+        # il figlio non può crescere indefinitivamente
+        if len(figlio) > self.max_layer:
+            figlio = figlio[:self.max_layer]
         return figlio
 
     def _mutazione(self, individuo):
@@ -223,22 +231,26 @@ class GeneticAlgorithm:
         @brief Applica mutazioni casuali a un cromosoma.
 
         Per ogni gene, con probabilità mutation_rate, applica una delle tre mutazioni
-        con pesi [20, 20, 1]:
-        - tipo 0: cambia il numero di neuroni del layer (MIN_NEURONI–MAX_NEURONI);
-        - tipo 1: cambia la funzione di attivazione;
-        - tipo 2: aggiunge o rimuove un layer intero.
+        con pesi [5, 5, 3] (tipo 0 e 1 più frequenti, tipo 2 meno frequente):
+        - tipo 0: cambia il numero di neuroni del layer (min_neuroni–max_neuroni);
+        - tipo 1: cambia la funzione di attivazione scelta da hidden_functions;
+        - tipo 2: aggiunge un nuovo layer casuale in posizione random, oppure rimuove
+                  un layer esistente (50/50), garantendo profondità minima 1.
 
         @param individuo (list[tuple[int, callable]]) Cromosoma da mutare.
-        @return (list[tuple[int, callable]]) Cromosoma mutato (copia, l'originale non viene modificato).
-        @note Dopo una rimozione di layer il loop si interrompe con break perché
-              gli indici non sono più validi.
-        @note Un layer viene rimosso solo se l'individuo ha più di un layer.
+        @return (list[tuple[int, callable]]) Cromosoma mutato (lista nuova; l'originale non viene modificato).
+        @note Il loop itera all'indietro (da len-1 a 0): il range è valutato una sola volta
+              all'inizio, quindi dopo una rimozione gli indici rimanenti (più bassi) restano validi.
+        @note La rimozione di un layer è consentita solo se l'individuo ha più di un layer,
+              garantendo che il cromosoma non diventi mai vuoto.
+        @note L'inserimento di un layer non è vincolato a max_layer: per una lunghezza
+              garantita usare _crossover, che applica il troncamento.
         """
         individuo = [layer_ for layer_ in individuo]
         for i in range(len(individuo) - 1, -1, -1):
             if self.rng.random() < self.mutation_rate:
                 new_layer = ()
-                mut = self.rng.choices([0, 1, 2], [2, 2, 20])[0]
+                mut = self.rng.choices([0, 1, 2], [5,5,3])[0]
                 if mut == 0: # mutano il numero di neuroni
                     new_layer = (self.rng.randint(self.min_neuroni, self.max_neuroni), individuo[i][1])
                     individuo[i] = new_layer
@@ -250,8 +262,7 @@ class GeneticAlgorithm:
                     if self.rng.randint(0, 1) == 0 and len(individuo) > 1:
                         pos = self.rng.randint(0, len(individuo) - 1)
                         del individuo[pos]
-                    else:
-
+                    elif len(individuo) < self.max_layer:
                         pos = self.rng.randint(0, len(individuo))
                         individuo.insert(pos, (self.rng.randint(self.min_neuroni, self.max_neuroni), self.rng.choice(self.hidden_functions)))
         return individuo
@@ -266,21 +277,22 @@ class GeneticAlgorithm:
         popolazione tramite elitismo + crossover + mutazione.
 
         @return (tuple) Tupla con sei elementi:
-                - best_individuo (list[tuple[int, callable]]): architettura ottimale trovata.
-                - best_fitness (float): fitness del miglior individuo.
-                - best_accuracy (float): accuracy del miglior individuo sul validation set.
-                - storia_best_fitness (list[float]): fitness migliore per ogni generazione.
-                - storia_best_accuracy (list[float]): accuracy migliore per ogni generazione.
+                - best_individuo (list[tuple[int, callable]]): architettura ottimale trovata (best globale).
+                - best_fitness (float): fitness del miglior individuo in assoluto, in [−∞, 1].
+                - best_accuracy (float): accuracy sul validation set del miglior individuo, in [0, 1].
+                - storia_best_fitness (list[float]): fitness dell'individuo con best fitness per generazione.
+                - storia_best_accuracy (list[float]): accuracy dell'individuo con best fitness per generazione.
+                  Corrisponde allo stesso soggetto di storia_best_fitness (stesso idx_best), non al massimo
+                  dell'accuracy nella popolazione; questo garantisce coerenza con best_individuo nel plot.
                 - storia_mean_accuracy (list[float]): accuracy media della popolazione per generazione.
-        @note Il miglior individuo di ogni generazione viene preservato nella generazione
-              successiva (elitismo).
+        @note Il miglior individuo assoluto (best globale tra tutte le generazioni) viene
+              reinserito nella nuova popolazione ad ogni generazione (elitismo).
         @note Se self.seed è impostato, i worker di ProcessPoolExecutor ricevono seed
               deterministici derivati come `seed + gen * population_size + idx_individuo`,
               garantendo riproducibilità completa anche con valutazione parallela.
-        @note Le statistiche per generazione usano np.nanargmax, np.nanmax e np.nanmean
-              invece delle versioni base: se un worker restituisce NaN (es. per underflow
-              numerici nella rete), la generazione non viene invalidata e il plot matplotlib
-              non riceve valori infiniti o NaN.
+        @note idx_best è calcolato con np.nanargmax(fitness_scores): se un worker restituisce
+              NaN (es. underflow numerico), la generazione non viene invalidata. La media
+              usa np.nanmean per la stessa ragione.
         """
         # Cosa deve restituire:
         # - miglior architettura trovata
@@ -306,7 +318,7 @@ class GeneticAlgorithm:
                 self.seed + i * self.population_size + j if self.seed is not None else None
                 for j in range(len(popolazione))
             ]
-            with ProcessPoolExecutor() as executor:
+            with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
                 risultati = list(executor.map(self._fitness, popolazione, worker_seeds))
             fitness_scores  = [r[0] for r in risultati]
             accuracy_scores = [r[1] for r in risultati]
@@ -321,8 +333,8 @@ class GeneticAlgorithm:
 
 
             # salviamo le statistiche
-            storia_best_fitness.append(np.nanmax(fitness_scores))
-            storia_best_accuracy.append(np.nanmax(accuracy_scores))
+            storia_best_fitness.append(fitness_scores[idx_best])
+            storia_best_accuracy.append(accuracy_scores[idx_best])
 
             storia_mean_accuracy.append(np.nanmean(accuracy_scores))
 
