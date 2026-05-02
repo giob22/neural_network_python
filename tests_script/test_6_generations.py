@@ -11,12 +11,13 @@ os.makedirs('tests_img', exist_ok=True)
 
 FIXED = dict(
     population=20, mutation_rate=0.2,
-    tournament_size=5, epochs=500, learning_rate=0.01,
-    lambda_=0.05, K=5, seed=42, plot=False,
-    dataset=load_digits(),
+    tournament_size=5, epochs=500, learning_rate=0.05,
+    lambda_=0.05, K=3, seed=42, plot=False,
+    dataset=load_digits(), max_workers=2
+    
 )
 
-VALUES = [5, 10, 20, 30, 50]
+VALUES = [5, 10, 20, 30, 50, 70, 100]
 PARAM  = 'generations'
 
 if __name__ == '__main__':
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     plt.savefig(f'tests_img/test_{PARAM}.png', dpi=150)
     plt.close()
     
-    # Grafico aggiuntivo normalizzato
+    # Grafico normalizzato: stesso asse x % per tutte le run
     fig2, ax = plt.subplots(figsize=(10, 5))
     for r in all_results:
         n = len(r['storia_best_fitness'])
@@ -97,4 +98,24 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig('tests_img/test_generations_norm.png', dpi=150)
     plt.close()
+
+    # Griglia di subplot: ogni run ha il proprio asse x — mostra chiaramente dove si stabilizza
+    ncols = 4
+    nrows = -(-len(all_results) // ncols)  # divisione con arrotondamento verso l'alto
+    fig3, axes3 = plt.subplots(nrows, ncols, figsize=(16, 4 * nrows))
+    axes3 = axes3.flatten()
+    for i, r in enumerate(all_results):
+        gen = range(1, len(r['storia_best_fitness']) + 1)
+        axes3[i].plot(gen, r['storia_best_fitness'], color='steelblue')
+        axes3[i].set_title(r['label'])
+        axes3[i].set_xlabel('Generazione')
+        axes3[i].set_ylabel('Best fitness (%)')
+        axes3[i].grid(True, alpha=0.3)
+    for j in range(i + 1, len(axes3)):
+        axes3[j].set_visible(False)
+    plt.suptitle('Best fitness per run — individua il gomito di stabilizzazione', fontsize=13)
+    plt.tight_layout()
+    plt.savefig('tests_img/test_generations_grid.png', dpi=150)
+    plt.close()
+
     print("Test 6 completato.")

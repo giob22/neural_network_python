@@ -11,12 +11,12 @@ os.makedirs('tests_img', exist_ok=True)
 
 FIXED = dict(
     generations=20, mutation_rate=0.2,
-    tournament_size=5, epochs=500, learning_rate=0.01,
-    lambda_=0.05, K=5, seed=42, plot=False,
+    tournament_size=5, epochs=500, learning_rate=0.05,
+    lambda_=0.05, K=3, seed=42, plot=False,
     dataset=load_digits(),
 )
 
-VALUES = [5, 10, 20, 30, 50]
+VALUES = [5, 10, 20, 30, 50, 70, 100]
 PARAM  = 'population'
 
 if __name__ == '__main__':
@@ -83,4 +83,19 @@ if __name__ == '__main__':
     plt.tight_layout()
     plt.savefig(f'tests_img/test_{PARAM}.png', dpi=150)
     plt.close()
+
+    # Grafico test_accuracy vs population (necessario per individuare il punto di plateau)
+    fig2, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(VALUES, [r['test_accuracy'] for r in all_results], marker='o', label='test accuracy')
+    ax.plot(VALUES, [r['best_accuracy'] for r in all_results], marker='s', linestyle='--', label='val accuracy')
+    ax.axhline(baseline, color='red', linestyle='dashed', label='baseline')
+    ax.set_xlabel('population')
+    ax.set_ylabel('Accuracy (%)')
+    ax.set_title('Test accuracy vs population size')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(f'tests_img/test_{PARAM}_accuracy.png', dpi=150)
+    plt.close()
+
     print("Test 5 completato.")

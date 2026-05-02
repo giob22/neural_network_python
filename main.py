@@ -119,7 +119,8 @@ def run(
     plot=True,
     config_baseline=None,
     dataset=None,
-    img_path="img/results"
+    img_path="img/results",
+    max_workers=None
 ):
     """
     @brief Esegue il ciclo completo: preprocessing, baseline, GA, valutazione, grafica.
@@ -141,6 +142,10 @@ def run(
            Default: load_iris(). Valutato una sola volta all'importazione del modulo.
     @param img_path (str) Percorso (senza estensione) in cui salvare il grafico PNG.
            Default: "img/results". La directory deve esistere.
+    @param max_workers (int | None) Numero massimo di processi paralleli nel ProcessPoolExecutor.
+           None usa il default di Python (min(32, cpu_count + 4)). Su macchine con poca RAM
+           impostare 2–4: ogni worker carica scipy+sklearn (~300-500 MB ciascuno) e troppi
+           processi paralleli esauriscono il pagefile di Windows.
     @return (dict) Dizionario con i risultati:
         - best_individuo (list[tuple[int, str]]): architettura migliore (funzioni come stringhe).
         - best_fitness (float): fitness del miglior individuo (percentuale).
@@ -217,7 +222,8 @@ def run(
         K=K,
         X_Train=x_train, Y_Train=y_train,
         X_val=x_val, Y_val=y_val,
-        seed=seed
+        seed=seed,
+        max_workers=max_workers
     )
 
     start_time = time.perf_counter()
@@ -417,6 +423,7 @@ def run(
         'best_accuracy':        best_accuracy_pct,
         'test_accuracy':        test_accuracy_pct,
         'accuracy_baseline':    round(accuracy_baseline * 100, 2),
+        'n_params_baseline':    number_params(input_size, cromosoma_baseline, n_classi),
         'storia_best_fitness':  storia_best_fitness,
         'storia_best_accuracy': storia_best_accuracy,
         'storia_mean_accuracy': storia_mean_accuracy,

@@ -11,9 +11,9 @@ from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_digi
 os.makedirs('tests_img', exist_ok=True)
 
 FIXED = dict(
-    population=20, generations=20, mutation_rate=0.2,
-    tournament_size=5, epochs=500, learning_rate=0.01,
-    lambda_=0.05, K=5, seed=42, plot=False,
+    population=20, generations=50, mutation_rate=0.2,
+    tournament_size=5, epochs=500, learning_rate=0.05,
+    lambda_=0.05, K=3, seed=42, plot=False,
 )
 
 DATASETS = {
@@ -40,6 +40,7 @@ if __name__ == '__main__':
             'accuracy_baseline': result['accuracy_baseline'],
             'gap_val_test':      round(result['best_accuracy'] - result['test_accuracy'], 2),
             'n_params':          result['n_params'],
+            'n_params_baseline': result['n_params_baseline'],
             'n_layer':           len(result['best_individuo']),
             'best_individuo':    str(result['best_individuo']),
         })
@@ -53,10 +54,11 @@ if __name__ == '__main__':
 
     fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 
-    names     = [r['label']           for r in all_results]
-    test_accs = [r['test_accuracy']   for r in all_results]
-    baselines = [r['accuracy_baseline'] for r in all_results]
-    nparams   = [r['n_params']         for r in all_results]
+    names            = [r['label']              for r in all_results]
+    test_accs        = [r['test_accuracy']      for r in all_results]
+    baselines        = [r['accuracy_baseline']  for r in all_results]
+    nparams          = [r['n_params']           for r in all_results]
+    nparams_baseline = [r['n_params_baseline']  for r in all_results]
 
     x = np.arange(len(names))
     w = 0.35
@@ -70,9 +72,13 @@ if __name__ == '__main__':
     axes[0].legend()
     axes[0].grid(True, alpha=0.3, axis='y')
 
-    axes[1].bar(names, nparams, color='steelblue')
+    axes[1].bar(x - w/2, nparams,          w, label='GA',      color='steelblue')
+    axes[1].bar(x + w/2, nparams_baseline, w, label='Baseline', color='#C30000B2')
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(names)
     axes[1].set_ylabel('#parametri')
-    axes[1].set_title('#parametri architettura migliore per dataset')
+    axes[1].set_title('#parametri GA vs Baseline per dataset')
+    axes[1].legend()
     axes[1].grid(True, alpha=0.3, axis='y')
 
     plt.suptitle('Test dataset — architettura trovata dal GA', fontsize=13)

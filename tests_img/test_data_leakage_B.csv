@@ -1,0 +1,3 @@
+scenario,test_accuracy,gap
+scaler_corretto,75.33,0
+scaler_leakage,74.0,-1.33

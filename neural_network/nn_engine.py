@@ -135,6 +135,9 @@ class neural_network:
         # Per hidden layer i: deltas[-(i+1)]   (es. i=0 → deltas[-1] = delta_hidden_0)
         # Per output layer:   deltas[0]
 
+        # gradient clipping: previene l'esplosione dei gradienti con reti profonde
+        deltas = [np.clip(d, -5.0, 5.0) for d in deltas]
+
         for i in range(len(self.hiddens_layers)):
             self.hiddens_layers[i].W -= self.lr * (deltas[-(i + 1)] @ layer_inputs[i].T)
             self.hiddens_layers[i].b -= self.lr * deltas[-(i + 1)]

@@ -11,8 +11,8 @@ os.makedirs('tests_img', exist_ok=True)
 
 FIXED = dict(
     population=20, generations=20, mutation_rate=0.2,
-    tournament_size=5, epochs=500, learning_rate=0.01,
-    K=5, seed=42, plot=False,
+    tournament_size=5, epochs=500, learning_rate=0.05,
+    K=3, seed=42, plot=False,
     dataset=load_digits(),
 )
 

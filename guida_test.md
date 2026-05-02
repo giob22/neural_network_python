@@ -24,6 +24,8 @@ FIXED = dict(
 )
 ```
 
+`code`
+
 > **Perché questi valori?**  
 > Sono volutamente ridotti (population=20, generations=20, K=5) per mantenere il tempo di esecuzione ragionevole durante i test. Una volta identificati i valori ottimali si può rieseguire con parametri più grandi per la run finale.
 
@@ -65,7 +67,7 @@ FIXED = dict(
 
 VALUES = [...]          # valori del parametro da variare
 PARAM  = 'nome_param'  # nome chiave da passare a run()
-
+3333333333
 csv_rows  = []
 all_results = []
 
@@ -690,6 +692,8 @@ Scegliere il valore più basso che produce una curva monotona o quasi monotona.
 ```python
 FIXED = dict(..., epochs=<VALORE_TROVATO>, ...)
 ```
+500
+
 
 ---
 
@@ -704,6 +708,8 @@ FIXED = dict(..., epochs=<VALORE_TROVATO>, ...)
 FIXED = dict(..., epochs=<step1>, K=<VALORE_TROVATO>, ...)
 ```
 
+3
+
 ---
 
 ### Step 3 — `learning_rate` → `test_1_learning_rate.py`
@@ -716,6 +722,8 @@ FIXED = dict(..., epochs=<step1>, K=<VALORE_TROVATO>, ...)
 ```python
 FIXED = dict(..., epochs=<step1>, K=<step2>, learning_rate=<VALORE_TROVATO>, ...)
 ```
+
+0.05
 
 ---
 
@@ -730,18 +738,22 @@ FIXED = dict(..., epochs=<step1>, K=<step2>, learning_rate=<VALORE_TROVATO>, ...
 FIXED = dict(..., epochs=<step1>, K=<step2>, learning_rate=<step3>, lambda_=<VALORE_TROVATO>, ...)
 ```
 
+0.05
+
 ---
 
 ### Step 5 — `mutation_rate` → `test_7_mutation_rate.py`
 
 **Prima di eseguire:** imposta i valori trovati agli step 1–4 in `FIXED`.
 
-**Criterio di scelta:** il rate con `test_accuracy` massima. Con rate=0 il GA converge velocemente ma su ottimi locali; con rate alto oscilla. Scegliere il punto di massimo `test_accuracy`.
+**Criterio di scelta:** il rate più basso che raggiunge una `test_accuracy` vicina al massimo osservato, con `storia_mean_accuracy` stabile (non oscillante) tra le generazioni. Un rate elevato (es. 0.8) può dare test_accuracy alta su una singola run per puro rumore: con 80% di geni mutati ad ogni step il GA perde la capacità di costruire su ciò che ha imparato e si riduce a ricerca casuale. Preferire il rate più conservativo che non peggiora la test_accuracy di più del 1–2% rispetto al picco.
 
 **Aggiornare nei file successivi (5, 6, 8, 9A):**
 ```python
 FIXED = dict(..., mutation_rate=<VALORE_TROVATO>, ...)
 ```
+
+0.2
 
 ---
 
@@ -749,12 +761,14 @@ FIXED = dict(..., mutation_rate=<VALORE_TROVATO>, ...)
 
 **Prima di eseguire:** imposta i valori trovati agli step 1–5 in `FIXED`.
 
-**Criterio di scelta:** il minimo valore di population per cui `test_accuracy` smette di crescere (punto di plateau). Oltre quel valore il costo computazionale cresce senza beneficio.
+**Criterio di scelta:** il valore di population con `test_accuracy` massima e gap `best_accuracy - test_accuracy` minimo. La relazione non è monotona: con generazioni fisse, popolazioni grandi esplorano più candidati ma li raffinano meno, quindi la test_accuracy tende a formare un picco anziché un plateau. Oltre il picco le performance calano e il gap val-test torna a crescere (maggiore varianza, non maggiore qualità). Usare il gap come segnale di generalizzazione: a parità di test_accuracy, preferire il population con gap più basso.
 
 **Aggiornare nei file successivi (6, 8, 9A):**
 ```python
 FIXED = dict(..., population=<VALORE_TROVATO>, ...)
 ```
+
+20
 
 ---
 
@@ -762,12 +776,14 @@ FIXED = dict(..., population=<VALORE_TROVATO>, ...)
 
 **Prima di eseguire:** imposta i valori trovati agli step 1–6 in `FIXED`.
 
-**Criterio di scelta:** la generazione in cui `storia_best_fitness` si stabilizza (variazione < 1% nelle ultime N generazioni). Usare il grafico convergenza normalizzata per trovare il "gomito".
+**Criterio di scelta:** la generazione in cui `storia_best_fitness` si stabilizza (lle ultime N generazioni). Usare il grafico convergenza normalizzata per trovare il "gomito".
 
 **Aggiornare nei file successivi (8, 9A):**
 ```python
 FIXED = dict(..., generations=<VALORE_TROVATO>, ...)
 ```
+
+50
 
 ---
 
@@ -800,6 +816,16 @@ FIXED = dict(..., generations=<VALORE_TROVATO>, ...)
 | 7 — generations | `generations=X` | test 8, 9A |
 
 ---
+
+## RISULTATI
+
+- epochs: 500
+- K: 3
+- lr: 0.05
+- lambda: 0.05
+- mutation_rate: 0.2
+- population: 20
+- generations: 50
 
 ## CSV finale consolidato
 

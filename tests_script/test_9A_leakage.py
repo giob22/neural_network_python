@@ -11,9 +11,9 @@ from sklearn.datasets import load_digits
 os.makedirs('tests_img', exist_ok=True)
 
 FIXED = dict(
-    population=20, generations=20, mutation_rate=0.2,
-    tournament_size=5, epochs=500, learning_rate=0.01,
-    lambda_=0.05, K=5, plot=False,
+    population=20, generations=50, mutation_rate=0.2,
+    tournament_size=5, epochs=500, learning_rate=0.05,
+    lambda_=0.05, K=3, seed=42, plot=False,
     dataset=load_digits(),
 )
 

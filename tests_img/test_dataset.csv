@@ -1,0 +1,5 @@
+dataset,n_feature,n_classi,n_campioni,test_accuracy,accuracy_baseline,gap_val_test,n_params,n_params_baseline,n_layer,best_individuo
+iris,4,3,150,92.22,94.44,5.56,43,139,1,"[(5, 'leaky_relu')]"
+wine,13,3,178,100.0,100.0,0.0,122,211,1,"[(7, 'relu')]"
+breast_cancer,30,2,569,95.61,96.2,2.05,167,338,1,"[(5, 'relu')]"
+digits,64,10,1797,90.65,58.33,0.83,1810,682,1,"[(24, 'relu')]"

@@ -1,0 +1,5 @@
+epochs,test_accuracy,best_accuracy,accuracy_baseline,n_params,elapsed_s,best_individuo
+100,53.72,60.72,22.56,4735,96.6,"[(63, 'relu')]"
+250,78.33,81.33,35.33,4435,96.8,"[(59, 'relu')]"
+500,88.06,88.22,45.61,3910,100.3,"[(52, 'relu')]"
+1000,91.44,92.78,63.44,4360,129.3,"[(58, 'leaky_relu')]"

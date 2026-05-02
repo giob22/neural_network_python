@@ -1,5 +1,0 @@
-lambda,best_accuracy,best_fitness,n_layer,n_params,accuracy_baseline,architettura
-0.0,97.78,97.78,7,13670,33.33,"[(43, 'relu'), (22, 'leaky_relu'), (53, 'leaky_relu'), (61, 'leaky_relu'), (43, 'relu'), (59, 'relu'), (43, 'relu')]"
-0.05,100.0,80.61,6,7545,33.33,"[(36, 'relu'), (21, 'leaky_relu'), (56, 'relu'), (48, 'relu'), (25, 'relu'), (48, 'leaky_relu')]"
-0.15,90.0,54.0,1,251,33.33,"[(31, 'leaky_relu')]"
-0.3,71.11,17.99,1,59,33.33,"[(7, 'leaky_relu')]"

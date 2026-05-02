@@ -1,0 +1,6 @@
+learning_rate,test_accuracy,best_accuracy,accuracy_baseline,n_params,best_individuo
+0.001,38.15,46.02,13.8,4735,"[(63, 'relu')]"
+0.005,81.48,83.8,35.28,4810,"[(64, 'relu')]"
+0.01,87.31,88.33,45.37,3760,"[(50, 'leaky_relu')]"
+0.05,90.65,91.48,58.33,1810,"[(24, 'relu')]"
+0.1,90.74,91.39,26.94,1810,"[(24, 'sigmoid')]"
